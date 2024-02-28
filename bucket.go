@@ -88,6 +88,7 @@ func (b *bucket) Remove(t *Timer) bool {
 	return b.remove(t)
 }
 
+// Flush use to flush the timer in this bucket, and offer to support reinsert method to reinsert the timer
 func (b *bucket) Flush(reinsert func(*Timer)) {
 	b.mu.Lock()
 	var ts []*Timer
@@ -103,6 +104,8 @@ func (b *bucket) Flush(reinsert func(*Timer)) {
 	b.SetExpiration(-1)
 
 	for _, t := range ts {
-		reinsert(t)
+		if reinsert != nil {
+			reinsert(t)
+		}
 	}
 }
