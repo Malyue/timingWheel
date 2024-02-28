@@ -35,10 +35,14 @@ func (pq priorityQueue) Swap(i, j int) {
 	pq[j].Index = j
 }
 
+// Push
 func (pq *priorityQueue) Push(x interface{}) {
 	n := len(*pq)
 	c := cap(*pq)
 	if n+1 > c {
+		if c == 0 {
+			c = 1
+		}
 		npq := make(priorityQueue, n, c*2)
 		copy(npq, *pq)
 		*pq = npq
@@ -63,6 +67,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
+// PeekAndShift pop
 func (pq *priorityQueue) PeekAndShift(max int64) (*item, int64) {
 	if pq.Len() == 0 {
 		return nil, 0
@@ -110,6 +115,7 @@ func (dq *DelayQueue) Insert(elem interface{}, expiration int64) {
 	}
 }
 
+// Poll fn is the method to get timestamp
 func (dq *DelayQueue) Poll(exitC chan struct{}, fn func() int64) {
 	for {
 		now := fn()

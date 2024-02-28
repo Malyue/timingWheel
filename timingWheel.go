@@ -23,6 +23,9 @@ type TimingWheel struct {
 	waitGroup waitGroupWrapper
 }
 
+// NewTimingWheel
+// tick is the interval
+// wheelSize is the length of bucket
 func NewTimingWheel(tick time.Duration, wheelSize int64) *TimingWheel {
 	tickMs := int64(tick / time.Millisecond)
 	if tickMs <= 0 {
@@ -79,7 +82,9 @@ func (tw *TimingWheel) add(t *Timer) bool {
 	return (*TimingWheel)(overflowWheel).add(t)
 }
 
+// Start the timingWheel
 func (tw *TimingWheel) Start() {
+	//
 	tw.waitGroup.Wrap(func() {
 		tw.queue.Poll(tw.exitChan, func() int64 {
 			return timeToMs(time.Now().UTC())
@@ -120,4 +125,9 @@ func (tw *TimingWheel) addOrRun(t *Timer) {
 	if !tw.add(t) {
 		go t.task()
 	}
+}
+
+func (tw *TimingWheel) Stop() {
+	close(tw.exitChan)
+	tw.waitGroup.Wait()
 }
