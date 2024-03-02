@@ -54,8 +54,10 @@ func newTimingWheel(tickMs int64, wheelSize int64, startMs int64, queue *delayqu
 	}
 }
 
+// add a timer task to the tw
 func (tw *TimingWheel) add(t *Timer) bool {
 	currentTime := atomic.LoadInt64(&tw.currentTime)
+	// already expired
 	if t.expiration < currentTime+tw.tick {
 		return false
 	}
@@ -76,6 +78,7 @@ func (tw *TimingWheel) add(t *Timer) bool {
 	// the expiration is in the next layer
 	overflowWheel := atomic.LoadPointer(&tw.overflowWheel)
 	if overflowWheel == nil {
+		// create a new layer
 		atomic.CompareAndSwapPointer(&tw.overflowWheel, nil, unsafe.Pointer(newTimingWheel(tw.interval, tw.wheelSize, currentTime, tw.queue)))
 		overflowWheel = atomic.LoadPointer(&tw.overflowWheel)
 	}
@@ -84,7 +87,6 @@ func (tw *TimingWheel) add(t *Timer) bool {
 
 // Start the timingWheel
 func (tw *TimingWheel) Start() {
-	//
 	tw.waitGroup.Wrap(func() {
 		tw.queue.Poll(tw.exitChan, func() int64 {
 			return timeToMs(time.Now().UTC())
@@ -107,9 +109,11 @@ func (tw *TimingWheel) Start() {
 	})
 }
 
+// advanceClock
 func (tw *TimingWheel) advanceClock(expiration int64) {
 	currentTime := atomic.LoadInt64(&tw.currentTime)
 	if expiration >= currentTime+tw.tick {
+		// reset currentTime
 		currentTime = truncate(expiration, tw.tick)
 		atomic.StoreInt64(&tw.currentTime, currentTime)
 
@@ -130,4 +134,15 @@ func (tw *TimingWheel) addOrRun(t *Timer) {
 func (tw *TimingWheel) Stop() {
 	close(tw.exitChan)
 	tw.waitGroup.Wait()
+}
+
+// AfterFunc waits for the duration to elapse and then calls f in its own goroutine.
+// It returns a Timer that can be used to cancel the call using its Stop method.
+func (tw *TimingWheel) AfterFunc(d time.Duration, f func()) *Timer {
+	t := &Timer{
+		expiration: timeToMs(time.Now().UTC().Add(d)),
+		task:       f,
+	}
+	tw.addOrRun(t)
+	return t
 }

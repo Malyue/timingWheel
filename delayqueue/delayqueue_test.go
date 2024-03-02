@@ -43,3 +43,14 @@ func TestPeekAndShift(t *testing.T) {
 	assert.Equal(t, 1, len(pq))
 	assert.Equal(t, 20, pq[0].Value)
 }
+
+func TestDelayQueue(t *testing.T) {
+	delayQueue := New(10)
+	exitChan := make(chan struct{})
+	delayQueue.Poll(exitChan, func() int64 {
+		return 15
+	})
+	delayQueue.Insert(10, int64(10))
+	delayQueue.Insert(20, int64(20))
+
+}
