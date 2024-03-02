@@ -126,6 +126,7 @@ func (tw *TimingWheel) advanceClock(expiration int64) {
 }
 
 func (tw *TimingWheel) addOrRun(t *Timer) {
+	// if the task is expired, run it directly
 	if !tw.add(t) {
 		go t.task()
 	}
